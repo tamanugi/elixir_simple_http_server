@@ -12,20 +12,37 @@ defmodule ElixirSimpleHttpServer do
   end
 
   def serve(socket) do
-    socket
-    |> read_line
-    |> write_line(socket)
-
-    serve(socket)
+    case read_line(socket) do
+      :continue -> serve(socket)
+      :end -> response(socket)
+    end
   end
 
   def read_line(socket) do
     {:ok, message} = :gen_tcp.recv(socket, 0)
-    message
+
+    case String.split(message, " ") do
+      [_method, _target, _version] ->
+        :continue
+      [_field_name, _field_value] ->
+        :continue
+      _ ->
+        :end
+    end
   end
 
-  def write_line(message, socket) do
+  def response(socket) do
+
+    message = 
+"""
+HTTP/1.1 200 OK
+Content-Length: 12
+
+HELLO WORLD!
+"""
+
     :gen_tcp.send(socket, message)
+    :gen_tcp.close(socket)
   end
 
 end
